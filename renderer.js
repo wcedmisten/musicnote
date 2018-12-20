@@ -1,16 +1,13 @@
-require('./thirdparty/MIDI.js');
+require('soundfont-player');
 
-window.onload = function () {
-    MIDI.loadPlugin({
-        soundfontUrl: "./soundfont/",
-        instrument: "acoustic_grand_piano",
-    });
+window.onload = function() {
+    instrument = Soundfont.instrument(ac, 'acoustic_grand_piano')
 }
 
 var canvas = document.getElementById("myCanvas");
 var ctx = canvas.getContext("2d");
 
-var ac = new AudioContext()
+var ac = new AudioContext();
 
 
 var staffImage = new Image();
@@ -124,24 +121,37 @@ function addNote(event) {
         }
 
         if (closestDist < MIN_PREVIEW_DIST) {
-            addedNotes.push([closest[0], closest[1]]);
+            // add the note if it is not already in the list
+            if (!addedNotes.some(note => (note[0] === closest[0] && note[1] === closest[1]))) {
+                /* vendors contains the element we're looking for */
+                addedNotes.push([closest[0], closest[1]]);   
+            }
             drawNote(closest[0], closest[1], "black");
             var C4height = 115;
             var note = 60 - (closest[1] - C4height) / (STAFFHEIGHT / 8);
             var delay = 0; // play one note every quarter second
             var velocity = 127; // how hard the note hits
             // play the note
-            MIDI.setVolume(0, 127);
-            MIDI.noteOn(0, note, velocity, delay);
-            MIDI.noteOff(0, note, delay + 1);
+            instrument.then(function (piano) {
+                piano.play(note, .25, {gain: velocity / 127.0});
+            });
         }
     }
 }
 
 function playNotes(event) {
-    // for (index in addedNotes) {
-
-    // }
+    // sort notes by x value
+    sortedNotes = addedNotes.sort(function(a, b) {return a[0] - b[0]});
+    var C4height = 115;
+    for (let i=0; i<sortedNotes.length; i++) {
+        setTimeout( function timer(){
+            drawNote(sortedNotes[i][0], sortedNotes[i][1], "red");
+            var note = 60 - (sortedNotes[i][1] - C4height) / (STAFFHEIGHT / 8);
+            instrument.then(function (piano) {
+                piano.play(note, .5);
+            });
+        }, i*1000 );
+    }
 }
 
 document.getElementById("addButton").addEventListener('click', addNoteButton);
