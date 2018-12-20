@@ -1,22 +1,17 @@
-var MidiPlayer = require('midi-player-js');
-var Soundfont = require('soundfont-player');
+require('./thirdparty/MIDI.js');
+
+window.onload = function () {
+    MIDI.loadPlugin({
+        soundfontUrl: "./soundfont/",
+        instrument: "acoustic_grand_piano",
+    });
+}
 
 var canvas = document.getElementById("myCanvas");
 var ctx = canvas.getContext("2d");
 
 var ac = new AudioContext()
 
-var Player = new MidiPlayer.Player(function(event) {
-    console.log(event);
-    if (event.name === "Note on" && event.velocity !== 0) {
-        Soundfont.instrument(ac, 'clavinet').then(function (clavinet) {
-            clavinet.play(event.noteName);
-        })
-    }
-});
-
-//Player.loadFile('test.mid');
-Player.play();
 
 var staffImage = new Image();
 
@@ -131,15 +126,25 @@ function addNote(event) {
         if (closestDist < MIN_PREVIEW_DIST) {
             addedNotes.push([closest[0], closest[1]]);
             drawNote(closest[0], closest[1], "black");
-            Soundfont.instrument(ac, 'acoustic_grand_piano').then(function (clavinet) {
-                var C4height = 115;
-                var note = 60 - (closest[1] - 115) / (STAFFHEIGHT / 8);
-                clavinet.play(note);
-            });
+            var C4height = 115;
+            var note = 60 - (closest[1] - C4height) / (STAFFHEIGHT / 8);
+            var delay = 0; // play one note every quarter second
+            var velocity = 127; // how hard the note hits
+            // play the note
+            MIDI.setVolume(0, 127);
+            MIDI.noteOn(0, note, velocity, delay);
+            MIDI.noteOff(0, note, delay + 1);
         }
     }
 }
 
+function playNotes(event) {
+    // for (index in addedNotes) {
+
+    // }
+}
+
 document.getElementById("addButton").addEventListener('click', addNoteButton);
+document.getElementById("playButton").addEventListener('click', playNotes);
 canvas.addEventListener('mousemove', previewNote, false);
 canvas.addEventListener('mousedown', addNote, false);
