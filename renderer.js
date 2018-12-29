@@ -54,14 +54,18 @@ for (var y = TOP_Y; y <= BOTTOM_Y; y+=((BOTTOM_Y - TOP_Y) / 8)) {
     }
 }
 
-var addedNotes = [];
+//var addedNotes = Array(16).fill([]);
+
+var addedNotes = [[], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], ]
 
 //reset the page to a blank staff
 function resetPage() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     drawStaffLines(100, 100);
-    for (note in addedNotes) {
-        drawNote(addedNotes[note][0], addedNotes[note][1], "black");
+    for (chord in addedNotes) {
+        for (note in addedNotes[chord]) {
+            drawNote(addedNotes[chord][note][0], addedNotes[chord][note][1], "black");
+        }
     }
 }
 
@@ -110,7 +114,7 @@ function addNote(event) {
         var closestDist = (event.offsetX - closest[0])* (event.offsetX - closest[0])
             + (event.offsetY - closest[1]) * (event.offsetY - closest[1]);
 
-        for (index in preview_notes) {
+        for (var index in preview_notes) {
             newDist = (event.offsetX - preview_notes[index][0])* (event.offsetX - preview_notes[index][0])
                 + (event.offsetY - preview_notes[index][1]) * (event.offsetY - preview_notes[index][1]);
 
@@ -121,16 +125,18 @@ function addNote(event) {
         }
 
         if (closestDist < MIN_PREVIEW_DIST) {
-            // add the note if it is not already in the list
-            if (!addedNotes.some(note => (note[0] === closest[0] && note[1] === closest[1]))) {
-                /* vendors contains the element we're looking for */
-                addedNotes.push([closest[0], closest[1]]);   
+            newIndex = (closest[0] - preview_notes[0][0]) / ((RIGHT_X - LEFT_X)/16);
+            // add the note if it is not already in the chord
+            if (!addedNotes[newIndex].some(note => (note[0] === closest[0] && note[1] === closest[1]))) {
+                (addedNotes[newIndex]).push([closest[0], closest[1]]);
             }
+
             drawNote(closest[0], closest[1], "black");
             var C4height = 115;
             var note = 60 - (closest[1] - C4height) / (STAFFHEIGHT / 8);
             var delay = 0; // play one note every quarter second
             var velocity = 127; // how hard the note hits
+
             // play the note
             instrument.then(function (piano) {
                 piano.play(note, .25, {gain: velocity / 127.0});
@@ -141,16 +147,27 @@ function addNote(event) {
 
 function playNotes(event) {
     // sort notes by x value
-    sortedNotes = addedNotes.sort(function(a, b) {return a[0] - b[0]});
+    // sortedNotes = addedNotes.sort(function(a, b) {return a[0] - b[0]});
     var C4height = 115;
-    for (let i=0; i<sortedNotes.length; i++) {
+
+    console.log(addedNotes);
+    for (let i = 0; i < addedNotes.length; i++) {
         setTimeout( function timer(){
-            drawNote(sortedNotes[i][0], sortedNotes[i][1], "red");
-            var note = 60 - (sortedNotes[i][1] - C4height) / (STAFFHEIGHT / 8);
+            notes = [];
+            for (j in addedNotes[i]) {
+                console.log(addedNotes[i][j][1]);
+                //drawNote(sortedNotes[i][0], sortedNotes[i][1], "red");
+                // if there is a rest, don't play anything
+                // console.log(addedNotes[i][j]);
+                
+                var thisNote = 60 - (addedNotes[i][j][1] - C4height) / (STAFFHEIGHT / 8);
+                notes.push({time:0, note:thisNote, options:{duration: .1}});
+            }
+
             instrument.then(function (piano) {
-                piano.play(note, .5);
+                piano.schedule(ac.currentTime, notes);
             });
-        }, i*1000 );
+        }, i*750 );
     }
 }
 
