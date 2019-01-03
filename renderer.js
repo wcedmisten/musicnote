@@ -107,6 +107,22 @@ function previewNote(event) {
     }
 }
 
+// return the proper note given a pixel distance from C5 on the treble clef
+function findNote(dist) {
+    baseNote = 'C';
+    baseOctave = 5;
+
+    // how many letters away from C
+    offBy = ((dist + 4) % 7) - 4
+    newNote = String.fromCharCode(baseNote.charCodeAt() - offBy);
+
+    newOctave = baseOctave - Math.ceil(dist / 7);
+
+    console.log(newNote + newOctave)
+    return newNote + newOctave;
+}
+
+
 // add a note permanently to the page
 function addNote(event) {
     if (previewNotes) {
@@ -133,13 +149,14 @@ function addNote(event) {
 
             drawNote(closest[0], closest[1], "black");
             var C4height = 115;
-            var note = 60 - (closest[1] - C4height) / (STAFFHEIGHT / 8);
+            //var note = 72 - (closest[1] - C4height) / (STAFFHEIGHT / 8);
+            var note = findNote((closest[1] - C4height) / (STAFFHEIGHT / 8));
             var delay = 0; // play one note every quarter second
             var velocity = 127; // how hard the note hits
 
             // play the note
             instrument.then(function (piano) {
-                piano.play(note, .25, {gain: velocity / 127.0});
+                piano.play(note, .25, {gain: velocity / 127.0}).stop(ac.currentTime + 0.7);
             });
         }
     }
@@ -150,22 +167,20 @@ function playNotes(event) {
     // sortedNotes = addedNotes.sort(function(a, b) {return a[0] - b[0]});
     var C4height = 115;
 
-    console.log(addedNotes);
     for (let i = 0; i < addedNotes.length; i++) {
         setTimeout( function timer(){
             notes = [];
             for (j in addedNotes[i]) {
-                console.log(addedNotes[i][j][1]);
                 //drawNote(sortedNotes[i][0], sortedNotes[i][1], "red");
                 // if there is a rest, don't play anything
-                // console.log(addedNotes[i][j]);
                 
-                var thisNote = 60 - (addedNotes[i][j][1] - C4height) / (STAFFHEIGHT / 8);
-                notes.push({time:0, note:thisNote, options:{duration: .1}});
+                var thisNote = 72 - (addedNotes[i][j][1] - C4height) / (STAFFHEIGHT / 8);
+                notes.push({time:0, note:thisNote});
             }
 
             instrument.then(function (piano) {
                 piano.schedule(ac.currentTime, notes);
+                piano.stop(ac.currentTime + .6);
             });
         }, i*750 );
     }
